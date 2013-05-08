@@ -39,7 +39,8 @@ module Lims::Api::Examples
 
       uuids.each do |e|
         API::new_step("Add a barcode to #{e[:uuid]}")
-        barcode(e[:uuid], barcode_values.shift) 
+        barcode(e[:uuid], barcode_values.shift)
+        API::get(e[:read])
       end
 
       uuids.each do |e|
