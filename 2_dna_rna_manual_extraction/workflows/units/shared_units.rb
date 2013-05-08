@@ -16,7 +16,7 @@ module Lims::Api::Examples
       @barcodes.each do |barcodes_array|
         source_tube_uuids = []
         tube_uuid = nil # just save the second tube uuid
-        barcodes_array.each_with_index do |barcode,index|
+        barcodes_array.each_with_index do |barcode, index|
           API::new_step("Find tube by barcode (#{barcode})")
           parameters = {:search => {:description => "search for barcoded tube",
                                     :model => "tube",
@@ -27,9 +27,9 @@ module Lims::Api::Examples
 
           API::new_step("Get the search result (tube)")
           result_url = search_response["search"]["actions"]["first"]
-          result_response = API::get(result_url) 
+          result_response = API::get(result_url)
           tube_uuid = result_response["tubes"].first["uuid"]
-          source_tube_uuids << tube_uuid 
+          source_tube_uuids << tube_uuid
 
           if index == 0
             API::new_step("Find the order by tube uuid")
@@ -66,13 +66,13 @@ module Lims::Api::Examples
         order_uuid = order["uuid"]
 
         # Check that no batch has been assigned to the tubes
-     #   no_batch = order["items"][ROLE_TUBE_TO_BE_EXTRACTED_NAP].reduce(true) { |m,e| m = m && e["batch"].nil? }
-     #   abort("Error: A batch is already assigned to the source tube") unless no_batch
+        #   no_batch = order["items"][ROLE_TUBE_TO_BE_EXTRACTED_NAP].reduce(true) { |m,e| m = m && e["batch"].nil? }
+        #   abort("Error: A batch is already assigned to the source tube") unless no_batch
 
         API::new_step("Assign the batch uuid to the tubes in the order items")
         parameters = {:items => {ROLE_TUBE_TO_BE_EXTRACTED_NAP => {}.tap do |h|
           source_tube_uuids.each { |uuid| h.merge!({uuid => {:batch_uuid => batch_uuid}}) }
-        end }}
+        end}}
         API::put(order["actions"]["update"], parameters)
 
         search_orders_by_batch
@@ -83,22 +83,21 @@ module Lims::Api::Examples
 
         API::new_step("Change the status of binding_tube_to_be_extracted_nap to done. Change the status of tube_to_be_extracted_nap to unused.")
         parameters = parameters_for_changing_items_status({
-          ROLE_TUBE_TO_BE_EXTRACTED_NAP => {:uuids => source_tube_uuids, :event => :unuse},
-          ROLE_BINDING_TUBE_TO_BE_EXTRACTED_NAP => {:uuids => source_tube_uuids, :event => :complete}
-        })
+                                                              ROLE_TUBE_TO_BE_EXTRACTED_NAP => {:uuids => source_tube_uuids, :event => :unuse},
+                                                              ROLE_BINDING_TUBE_TO_BE_EXTRACTED_NAP => {:uuids => source_tube_uuids, :event => :complete}
+                                                          })
         API::put(order["actions"]["update"], parameters)
       end
-      
+
       result = search_orders_by_batch
       result[:source_tube_uuids_array].each do |tube_uuid|
         #API::get("#{API::root}/#{tube_uuid}")
         API::get("#{API::root}/lims-laboratory/#{tube_uuid}")
       end
 
-     # API::new_step("Add the kit barcode to the batch")
-     # parameters = { :kit => KIT_BARCODE }
-     # API::put(@batch_uuid, parameters)
-
+      API::new_step("Add the kit barcode to the batch")
+      parameters = { :kit => KIT_BARCODE }
+      API::put(@batch_uuid, parameters)
       {:order_uuid => order_uuid, :order_update_url => order["actions"]["update"]}
     end
 
@@ -117,7 +116,7 @@ module Lims::Api::Examples
       result_url = search_response["search"]["actions"]["first"]
       result_response = API::get(result_url)
 
-      order_uuids = result_response["orders"].reduce([]) { |m,e| m << e["uuid"] }
+      order_uuids = result_response["orders"].reduce([]) { |m, e| m << e["uuid"] }
       source_tube_uuids_array = [].tap do |arr|
         result_response["orders"].each do |o|
           if o.has_key?("items") && o["items"].has_key?(ROLE_BINDING_TUBE_TO_BE_EXTRACTED_NAP)
